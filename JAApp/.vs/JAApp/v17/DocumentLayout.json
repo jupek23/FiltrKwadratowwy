@@ -1,0 +1,124 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\FiltrKwadratowy\\JAApp\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{605859F1-06E2-41A7-B9FF-DFFDB8455674}|JAApp\\JAApp.csproj|e:\\filtrkwadratowy\\jaapp\\jaapp\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{605859F1-06E2-41A7-B9FF-DFFDB8455674}|JAApp\\JAApp.csproj|solutionrelative:jaapp\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{605859F1-06E2-41A7-B9FF-DFFDB8455674}|JAApp\\JAApp.csproj|e:\\filtrkwadratowy\\jaapp\\jaapp\\customcontrol1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{605859F1-06E2-41A7-B9FF-DFFDB8455674}|JAApp\\JAApp.csproj|solutionrelative:jaapp\\customcontrol1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{605859F1-06E2-41A7-B9FF-DFFDB8455674}|JAApp\\JAApp.csproj|e:\\filtrkwadratowy\\jaapp\\jaapp\\assemblyinfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{605859F1-06E2-41A7-B9FF-DFFDB8455674}|JAApp\\JAApp.csproj|solutionrelative:jaapp\\assemblyinfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{605859F1-06E2-41A7-B9FF-DFFDB8455674}|JAApp\\JAApp.csproj|e:\\filtrkwadratowy\\jaapp\\jaapp\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{605859F1-06E2-41A7-B9FF-DFFDB8455674}|JAApp\\JAApp.csproj|solutionrelative:jaapp\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5924BC33-6B1F-4FD9-A9E3-3F35702109D4}|JADll\\JADll.vcxproj|E:\\FiltrKwadratowy\\JAApp\\JADll\\MyDll.asm||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{5924BC33-6B1F-4FD9-A9E3-3F35702109D4}|JADll\\JADll.vcxproj|solutionrelative:JADll\\MyDll.asm||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5924BC33-6B1F-4FD9-A9E3-3F35702109D4}|JADll\\JADll.vcxproj|E:\\FiltrKwadratowy\\JAApp\\JADll\\MyDll.def||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{5924BC33-6B1F-4FD9-A9E3-3F35702109D4}|JADll\\JADll.vcxproj|solutionrelative:JADll\\MyDll.def||{8B382828-6202-11D1-8870-0000F87579D2}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 100,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 222,
+          "SelectedChildIndex": 6,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CustomControl1.cs",
+              "DocumentMoniker": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\CustomControl1.cs",
+              "RelativeDocumentMoniker": "JAApp\\CustomControl1.cs",
+              "ToolTip": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\CustomControl1.cs",
+              "RelativeToolTip": "JAApp\\CustomControl1.cs",
+              "ViewState": "AQIAABgAAAAAAAAAAAAAAB8AAABCAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-10-28T11:27:53.605Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "AssemblyInfo.cs",
+              "DocumentMoniker": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\AssemblyInfo.cs",
+              "RelativeDocumentMoniker": "JAApp\\AssemblyInfo.cs",
+              "ToolTip": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\AssemblyInfo.cs",
+              "RelativeToolTip": "JAApp\\AssemblyInfo.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAIAAAAVAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-10-28T11:10:01.899Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "MyDll.def",
+              "DocumentMoniker": "E:\\FiltrKwadratowy\\JAApp\\JADll\\MyDll.def",
+              "RelativeDocumentMoniker": "JADll\\MyDll.def",
+              "ToolTip": "E:\\FiltrKwadratowy\\JAApp\\JADll\\MyDll.def",
+              "RelativeToolTip": "JADll\\MyDll.def",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAEAAAAPAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001913|",
+              "WhenOpened": "2024-10-28T10:54:14.372Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "MyDll.asm",
+              "DocumentMoniker": "E:\\FiltrKwadratowy\\JAApp\\JADll\\MyDll.asm",
+              "RelativeDocumentMoniker": "JADll\\MyDll.asm",
+              "ToolTip": "E:\\FiltrKwadratowy\\JAApp\\JADll\\MyDll.asm",
+              "RelativeToolTip": "JADll\\MyDll.asm",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAEAAAAHAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-10-28T10:54:02.67Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "JAApp\\MainWindow.xaml",
+              "ToolTip": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\MainWindow.xaml",
+              "RelativeToolTip": "JAApp\\MainWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2024-10-28T10:51:31.87Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "MainWindow.xaml.cs",
+              "DocumentMoniker": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\MainWindow.xaml.cs",
+              "RelativeDocumentMoniker": "JAApp\\MainWindow.xaml.cs",
+              "ToolTip": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\MainWindow.xaml.cs",
+              "RelativeToolTip": "JAApp\\MainWindow.xaml.cs",
+              "ViewState": "AQIAABAAAAAAAAAAAAAAABsAAABUAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-10-28T10:51:30.043Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
