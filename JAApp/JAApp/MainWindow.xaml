@@ -16,11 +16,12 @@
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            
+
+
             <ColumnDefinition Width="1.5*"/>
             <ColumnDefinition Width="1.5*"/>
             <ColumnDefinition Width="2*"/>
-      
+
         </Grid.ColumnDefinitions>
 
 
@@ -30,6 +31,13 @@
                VerticalAlignment="Center"
                HorizontalAlignment="Center"
                />
+        <Image Grid.Row="0"
+                Grid.Column="2"
+                Source="Kot1.jpg"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+               Name="tutaj_beda_grafy"
+                />
         <TextBlock Grid.Row="0" 
                    x:Name="Kamil" 
                    VerticalAlignment="Center" 
@@ -56,6 +64,33 @@
         <Image Grid.Row="0" 
                Grid.Column="2"
                Name="charts"/>
+        <TextBlock Grid.Row="1"  
+                   Grid.Column="0"
+                   VerticalAlignment="Top" 
+                   HorizontalAlignment="Center">
+                   
+            Wybierz technologie
+
+        </TextBlock>
+        <Button Grid.Row="1"
+                Grid.Column="0"
+                Content="ASM"
+                Width="100"
+                Height="50"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Left"
+                Click="asmButton"
+            />
+        <Button Grid.Row="1"
+                Grid.Column="0"
+                Content="C"
+                Width="100"
+                Height="50"
+                VerticalAlignment="Center"
+                HorizontalAlignment="right"
+                Click="cButton"
+                />
+
 
     </Grid>
 </Window>

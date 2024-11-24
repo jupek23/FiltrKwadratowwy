@@ -1,3 +1,4 @@
-﻿     Trwa tworzenie biblioteki E:\FiltrKwadratowy\JAApp\x64Debug\JADll.lib i obiektu E:\FiltrKwadratowy\JAApp\x64Debug\JADll.exp
-JADll.exp : warning LNK4070: /OUT: dyrektywa JAAsm.dll w pliku .EXP jest inna niż nazwa pliku wyjściowego „E:\FiltrKwadratowy\JAApp\x64Debug\JADll.dll”; dyrektywa została zignorowana
-  JADll.vcxproj -> E:\FiltrKwadratowy\JAApp\x64Debug\JADll.dll
+﻿  Assembling MyDll.asm...
+     Trwa tworzenie biblioteki C:\Users\matis\FiltrKwadratowwy\JAApp\x64Debug\JADll.lib i obiektu C:\Users\matis\FiltrKwadratowwy\JAApp\x64Debug\JADll.exp
+JADll.exp : warning LNK4070: /OUT: dyrektywa JAAsm.dll w pliku .EXP jest inna niż nazwa pliku wyjściowego „C:\Users\matis\FiltrKwadratowwy\JAApp\x64Debug\JADll.dll”; dyrektywa została zignorowana
+  JADll.vcxproj -> C:\Users\matis\FiltrKwadratowwy\JAApp\x64Debug\JADll.dll

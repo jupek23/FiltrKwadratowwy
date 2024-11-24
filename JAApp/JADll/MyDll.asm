@@ -1,7 +1,7 @@
 .code
-MyProc1 proc
+ApplyASMFilter proc
 add RCX, RDX
 mov RAX, RCX
 ret
-MyProc1 endp
+ApplyASMFilter endp
 end

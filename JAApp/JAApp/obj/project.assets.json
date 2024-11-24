@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\JAApp.csproj",
+      "projectUniqueName": "C:\\Users\\matis\\FiltrKwadratowwy\\JAApp\\JAApp\\JAApp.csproj",
       "projectName": "JAApp",
-      "projectPath": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\JAApp.csproj",
+      "projectPath": "C:\\Users\\matis\\FiltrKwadratowwy\\JAApp\\JAApp\\JAApp.csproj",
       "packagesPath": "C:\\Users\\matis\\.nuget\\packages\\",
-      "outputPath": "E:\\FiltrKwadratowy\\JAApp\\JAApp\\obj\\",
+      "outputPath": "C:\\Users\\matis\\FiltrKwadratowwy\\JAApp\\JAApp\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\matis\\AppData\\Roaming\\NuGet\\NuGet.Config",
