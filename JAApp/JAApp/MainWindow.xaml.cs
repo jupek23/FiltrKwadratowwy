@@ -10,6 +10,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.Win32;
 
 namespace JAApp
 {
@@ -23,6 +24,21 @@ namespace JAApp
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void ChooseFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Title = "Wybierz oraz",
+                Filter = "Pliki graficzne (*.jpg;*.png;*.bmp)|*.jpg;*.png;*.bmp|Wszystkie pliki (*.*)|*.*"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string SelectedFilePath = openFileDialog.FileName; 
+                MessageBox.Show($"Wybrano plik: {SelectedFilePath}", "Informacja");
+            }
         }
 
         private int[,] algorithm(int[,] image)
