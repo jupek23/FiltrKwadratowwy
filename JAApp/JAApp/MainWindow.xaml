@@ -23,63 +23,19 @@
             <ColumnDefinition Width="2*"/>
 
         </Grid.ColumnDefinitions>
-
-
-        <Image Grid.Row="0"
-               Grid.Column="0"
-               Source="Kot1.jpg"
-               VerticalAlignment="Center"
-               HorizontalAlignment="Center"
-               />
-        <Image Grid.Row="0"
-                Grid.Column="2"
-                Source="Kot1.jpg"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center"
-               Name="tutaj_beda_grafy"
-                />
-        <TextBlock Grid.Row="0" 
-                   x:Name="Kamil" 
-                   VerticalAlignment="Center" 
-                   HorizontalAlignment="Left">
-                   
-            Przed
-
-        </TextBlock>
-        <Image Grid.Row="0" 
-               Grid.Column="1" 
-               Name="after"
-               Source="Kot1.jpg"
-               VerticalAlignment="Center"
-               HorizontalAlignment="Center"
-               />
         <TextBlock Grid.Row="0"  
                    Grid.Column="1"
                    VerticalAlignment="Center" 
                    HorizontalAlignment="Left">
-                   
-            Po
-
         </TextBlock>
-        <Image Grid.Row="0" 
-               Grid.Column="2"
-               Name="charts"/>
         <TextBlock Grid.Row="1"  
                    Grid.Column="0"
                    VerticalAlignment="Top" 
-                   HorizontalAlignment="Center">
+                   HorizontalAlignment="Left" Margin="70,38,0,0">
                    
             Wybierz technologie
 
         </TextBlock>
-        <Button Grid.Row="1" 
-                Content="Wybierz plik" 
-                Width="100" 
-                Height="50" 
-                VerticalAlignment="Top" 
-                HorizontalAlignment="Center" 
-                Click="ChooseFileButton_Click" 
-                Margin="0,133,0,0"/>
         <Button Grid.Row="1"
                 Grid.Column="0"
                 Content="ASM"
@@ -88,7 +44,8 @@
                 VerticalAlignment="Top"
                 HorizontalAlignment="Left"
                 Click="asmButton" Margin="0,59,0,0"
-            />
+                />
+
         <Button Grid.Row="1"
                 Grid.Column="0"
                 Content="C"
@@ -99,6 +56,22 @@
                 Click="cButton" Margin="0,59,0,0"
                 />
 
+        <Button Grid.Row="1" 
+                Content="Wybierz plik" 
+                Width="100" 
+                Height="50" 
+                VerticalAlignment="Top" 
+                HorizontalAlignment="Center" 
+                Click="ChooseFileButton_Click" 
+                Margin="0,133,0,0"
+                />
+
+        <Image Name ="DisplayImage"
+               HorizontalAlignment="Center" 
+               VerticalAlignment="Center" 
+               Width="400" Height="400" 
+               Stretch="Uniform" 
+               />
 
 
     </Grid>
