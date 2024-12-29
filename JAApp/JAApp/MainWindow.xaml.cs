@@ -20,14 +20,21 @@ namespace JAApp
     public partial class MainWindow : Window
     {
         [DllImport("/../../../../x64Debug/JADll.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern int ApplyASMFilter(int[,] image);
+        public static extern int ApplyASMFilter(int[] image, int width, int height);
+
         [DllImport("/../../../../x64/Debug/CPPDll.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern int ApplyCFilter(int a, int b);
+        public static extern int ApplyCFilter(int[] image, int width, int height);
+
+        private string selectedFilePath;
+        private int[] imagePixels;
+        private int imageWidth;
+        private int imageHeight;
+
         public MainWindow()
         {
             InitializeComponent();
-            Debug.WriteLine(ApplyCFilter(2,2));
         }
+
         private void ChooseFileButton_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
@@ -38,35 +45,91 @@ namespace JAApp
 
             if (openFileDialog.ShowDialog() == true)
             {
-                string selectedFilePath = openFileDialog.FileName;
+                selectedFilePath = openFileDialog.FileName;
 
-                // Załaduj obraz i wyświetl w GUI
-                LoadToGui(selectedFilePath);
+                try
+                {
+                    LoadToGui(selectedFilePath);
+                    ConvertToBitMap(selectedFilePath);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Błąd podczas ładowania obrazu: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
         private void LoadToGui(string path)
         {
-                DisplayImage.Source = new BitmapImage(new Uri(path)); 
+            DisplayImage.Source = new BitmapImage(new Uri(path));
         }
 
-        private void pngToBitMap()
+        private void ConvertToBitMap(string path)
         {
+            BitmapImage bitmapImage = new BitmapImage(new Uri(path));
 
+            imageWidth = bitmapImage.PixelWidth;
+            imageHeight = bitmapImage.PixelHeight;
+
+            // Calculate stride and allocate pixel buffer
+            int stride = imageWidth * ((bitmapImage.Format.BitsPerPixel + 7) / 8);
+            byte[] pixelData = new byte[imageHeight * stride];
+
+            // Extract pixel data
+            bitmapImage.CopyPixels(pixelData, stride, 0);
+
+            // Convert byte array (BGRA format) to int array (ARGB format)
+            imagePixels = new int[imageWidth * imageHeight];
+            for (int i = 0, j = 0; i < pixelData.Length; i += 4, j++)
+            {
+                int blue = pixelData[i];
+                int green = pixelData[i + 1];
+                int red = pixelData[i + 2];
+                int alpha = pixelData[i + 3];
+                imagePixels[j] = (alpha << 24) | (red << 16) | (green << 8) | blue;
+            }
+
+            Debug.WriteLine($"Image loaded: {imageWidth}x{imageHeight}, Pixels extracted: {imagePixels.Length}");
         }
-
 
         private void cButton(object sender, RoutedEventArgs e)
         {
-            ApplyCFilter(2, 2);
-        }
+            if (imagePixels == null)
+            {
+                MessageBox.Show("Najpierw wybierz i załaduj obraz!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
+            try
+            {
+                int result = ApplyCFilter(imagePixels, imageWidth, imageHeight);
+                Debug.WriteLine($"ApplyCFilter result: {result}");
+                MessageBox.Show("Filtr C zastosowany!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Błąd podczas wywołania filtru C: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         private void asmButton(object sender, RoutedEventArgs e)
         {
-            int[,] image = new int[3, 3] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
-            ApplyASMFilter(image);
+            if (imagePixels == null)
+            {
+                MessageBox.Show("Najpierw wybierz i załaduj obraz!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
+            try
+            {
+                int result = ApplyASMFilter(imagePixels, imageWidth, imageHeight);
+                Debug.WriteLine($"ApplyASMFilter result: {result}");
+                MessageBox.Show("Filtr ASM zastosowany!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Błąd podczas wywołania filtru ASM: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }
