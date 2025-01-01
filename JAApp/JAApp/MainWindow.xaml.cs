@@ -92,6 +92,36 @@ namespace JAApp
             Debug.WriteLine($"Image loaded: {imageWidth}x{imageHeight}, Pixels extracted: {imagePixels.Length}");
         }
 
+        private void convertToImage() {
+
+            if (imagePixels == null)
+            {
+                MessageBox.Show("Brak danych pikseli do konwersji!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                byte[] pixelData = new byte[imageWidth * imageHeight * 4];
+                for (int i = 0, j = 0; i < imagePixels.Length; i++, j += 4)
+                {
+                    int pixel = imagePixels[i];
+                    pixelData[j] = (byte)(pixel & 0xFF);         // Blue
+                    pixelData[j + 1] = (byte)((pixel >> 8) & 0xFF); // Green
+                    pixelData[j + 2] = (byte)((pixel >> 16) & 0xFF); // Red
+                    pixelData[j + 3] = (byte)((pixel >> 24) & 0xFF); // Alpha
+                }
+
+                WriteableBitmap bitmap = new WriteableBitmap(imageWidth, imageHeight, 96, 96, PixelFormats.Bgra32, null);
+                bitmap.WritePixels(new Int32Rect(0, 0, imageWidth, imageHeight), pixelData, imageWidth * 4, 0);
+                DisplayImage.Source = bitmap;
+                Debug.WriteLine("Processed image displayed successfully.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Błąd podczas konwersji obrazu: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         private void cButton(object sender, RoutedEventArgs e)
         {
             if (imagePixels == null)
@@ -103,8 +133,11 @@ namespace JAApp
             try
             {
                 int result = ApplyCFilter(imagePixels, imageWidth, imageHeight);
+                Debug.WriteLine($"ApplyCFilter result: {imagePixels}");
                 Debug.WriteLine($"ApplyCFilter result: {result}");
+                convertToImage();
                 MessageBox.Show("Filtr C zastosowany!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+
             }
             catch (Exception ex)
             {
