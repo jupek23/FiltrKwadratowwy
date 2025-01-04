@@ -1,34 +1,28 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Microsoft.Win32;
 
 namespace JAApp
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
+        // Importowanie funkcji DLL z użyciem IntPtr
         [DllImport("/../../../../x64Debug/JADll.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern int ApplyASMFilter(int[] image, int width, int height);
+        public static extern int ApplyASMFilter(IntPtr pixelData, int width, int startY, int endY, int imageHeight);
 
         [DllImport("/../../../../x64/Debug/CPPDll.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern int ApplyCFilter(int[] image, int width, int height);
+        public static extern int ApplyCFilter(IntPtr pixelData, int width, int startY, int endY, int imageHeight);
 
         private string selectedFilePath;
-        private int[] imagePixels;
+        private byte[] imagePixels;
         private int imageWidth;
         private int imageHeight;
+        private int selectedThreads = 1;
 
         public MainWindow()
         {
@@ -61,7 +55,7 @@ namespace JAApp
 
         private void LoadToGui(string path)
         {
-            DisplayImage.Source = new BitmapImage(new Uri(path));
+            DisplayImage1.Source = new BitmapImage(new Uri(path));
         }
 
         private void ConvertToBitMap(string path)
@@ -72,28 +66,18 @@ namespace JAApp
             imageHeight = bitmapImage.PixelHeight;
 
             // Calculate stride and allocate pixel buffer
-            int stride = imageWidth * ((bitmapImage.Format.BitsPerPixel + 7) / 8);
-            byte[] pixelData = new byte[imageHeight * stride];
+            int stride = imageWidth * 3; // RGB (3 bajty na piksel)
+            imagePixels = new byte[imageHeight * stride];
 
             // Extract pixel data
-            bitmapImage.CopyPixels(pixelData, stride, 0);
-
-            // Convert byte array (BGRA format) to int array (ARGB format)
-            imagePixels = new int[imageWidth * imageHeight];
-            for (int i = 0, j = 0; i < pixelData.Length; i += 4, j++)
-            {
-                int blue = pixelData[i];
-                int green = pixelData[i + 1];
-                int red = pixelData[i + 2];
-                int alpha = pixelData[i + 3];
-                imagePixels[j] = (alpha << 24) | (red << 16) | (green << 8) | blue;
-            }
+            FormatConvertedBitmap formattedBitmap = new FormatConvertedBitmap(bitmapImage, PixelFormats.Rgb24, null, 0);
+            formattedBitmap.CopyPixels(imagePixels, stride, 0);
 
             Debug.WriteLine($"Image loaded: {imageWidth}x{imageHeight}, Pixels extracted: {imagePixels.Length}");
         }
 
-        private void convertToImage() {
-
+        private void ConvertToImage()
+        {
             if (imagePixels == null)
             {
                 MessageBox.Show("Brak danych pikseli do konwersji!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -102,19 +86,9 @@ namespace JAApp
 
             try
             {
-                byte[] pixelData = new byte[imageWidth * imageHeight * 4];
-                for (int i = 0, j = 0; i < imagePixels.Length; i++, j += 4)
-                {
-                    int pixel = imagePixels[i];
-                    pixelData[j] = (byte)(pixel & 0xFF);         // Blue
-                    pixelData[j + 1] = (byte)((pixel >> 8) & 0xFF); // Green
-                    pixelData[j + 2] = (byte)((pixel >> 16) & 0xFF); // Red
-                    pixelData[j + 3] = (byte)((pixel >> 24) & 0xFF); // Alpha
-                }
-
-                WriteableBitmap bitmap = new WriteableBitmap(imageWidth, imageHeight, 96, 96, PixelFormats.Bgra32, null);
-                bitmap.WritePixels(new Int32Rect(0, 0, imageWidth, imageHeight), pixelData, imageWidth * 4, 0);
-                DisplayImage.Source = bitmap;
+                WriteableBitmap bitmap = new WriteableBitmap(imageWidth, imageHeight, 96, 96, PixelFormats.Rgb24, null);
+                bitmap.WritePixels(new Int32Rect(0, 0, imageWidth, imageHeight), imagePixels, imageWidth * 3, 0);
+                DisplayImage2.Source = bitmap;
                 Debug.WriteLine("Processed image displayed successfully.");
             }
             catch (Exception ex)
@@ -122,6 +96,7 @@ namespace JAApp
                 MessageBox.Show($"Błąd podczas konwersji obrazu: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
         private void cButton(object sender, RoutedEventArgs e)
         {
             if (imagePixels == null)
@@ -132,12 +107,25 @@ namespace JAApp
 
             try
             {
-                int result = ApplyCFilter(imagePixels, imageWidth, imageHeight);
-                Debug.WriteLine($"ApplyCFilter result: {imagePixels}");
-                Debug.WriteLine($"ApplyCFilter result: {result}");
-                convertToImage();
-                MessageBox.Show("Filtr C zastosowany!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+                int numberOfThreads = selectedThreads;
+                int rowsPerThread = imageHeight / numberOfThreads;
 
+                Parallel.For(0, numberOfThreads, threadIndex =>
+                {
+                    int startY = threadIndex * rowsPerThread;
+                    int endY = (threadIndex == numberOfThreads - 1) ? imageHeight : startY + rowsPerThread;
+
+                    IntPtr unmanagedPointer = Marshal.AllocHGlobal(imagePixels.Length);
+                    Marshal.Copy(imagePixels, 0, unmanagedPointer, imagePixels.Length);
+
+                    ApplyCFilter(unmanagedPointer, imageWidth, startY, endY, imageHeight);
+
+                    Marshal.Copy(unmanagedPointer, imagePixels, 0, imagePixels.Length);
+                    Marshal.FreeHGlobal(unmanagedPointer);
+                });
+
+                ConvertToImage();
+                MessageBox.Show("Filtr C zastosowany!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -155,8 +143,24 @@ namespace JAApp
 
             try
             {
-                int result = ApplyASMFilter(imagePixels, imageWidth, imageHeight);
-                Debug.WriteLine($"ApplyASMFilter result: {result}");
+                int numberOfThreads = selectedThreads;
+                int rowsPerThread = imageHeight / numberOfThreads;
+
+                Parallel.For(0, numberOfThreads, threadIndex =>
+                {
+                    int startY = threadIndex * rowsPerThread;
+                    int endY = (threadIndex == numberOfThreads - 1) ? imageHeight : startY + rowsPerThread;
+
+                    IntPtr unmanagedPointer = Marshal.AllocHGlobal(imagePixels.Length);
+                    Marshal.Copy(imagePixels, 0, unmanagedPointer, imagePixels.Length);
+
+                    ApplyASMFilter(unmanagedPointer, imageWidth, startY, endY, imageHeight);
+
+                    Marshal.Copy(unmanagedPointer, imagePixels, 0, imagePixels.Length);
+                    Marshal.FreeHGlobal(unmanagedPointer);
+                });
+
+                ConvertToImage();
                 MessageBox.Show("Filtr ASM zastosowany!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)

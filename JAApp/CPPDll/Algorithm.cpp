@@ -1,27 +1,43 @@
 #include "pch.h"
-#include <iostream>
+#include <vector>
 #include <algorithm>
-using namespace std;
 
-extern "C" __declspec(dllexport) int ApplyCFilter(int* image, int w, int h) {
-	// obliczenie ilosc pixeli w calym obrazie
-	int pixels = w * h;
+// Custom clamp function
+inline float clamp(float value, float minValue, float maxValue) {
+    if (value < minValue) return minValue;
+    if (value > maxValue) return maxValue;
+    return value;
+}
 
-	// wartosc o ile rozjasnimy obraz
-	int brightness = 50;
+extern "C" __declspec(dllexport) int ApplyCFilter(unsigned char* pixelData, int width, int startY, int endY, int imageHeight) {
+    const int maskSize = 5;
+    const int halfMask = maskSize / 2;
+    const float maskValue = 1.0f / 25.0f;
 
-	for (int i = 0; i < pixels; i++) {
-		int pixel = image[i];
-		int a = (pixel >> 24) & 0xFF;
-		int r = (pixel >> 16) & 0xFF;
-		int g = (pixel >> 8) & 0xFF;
-		int b = pixel & 0xFF;
+    // Iterating over rows from startY to endY
+    for (int y = startY; y < endY; ++y) {
+        for (int x = 0; x < width; ++x) {
+            float sumBlue = 0.0f, sumGreen = 0.0f, sumRed = 0.0f;
 
-		r = min(r + brightness, 255);
-		g = min(g + brightness, 255);
-		b = min(b + brightness, 255);
+            for (int dy = -halfMask; dy <= halfMask; ++dy) {
+                for (int dx = -halfMask; dx <= halfMask; ++dx) {
+                    int nx = x + dx;
+                    int ny = y + dy;
 
-		image[i] = (a << 24) | (r << 16) | (g << 8) | b;
-	}
-	return 0;
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < imageHeight) {
+                        int index = (ny * width + nx) * 3;
+                        sumBlue += pixelData[index] * maskValue;
+                        sumGreen += pixelData[index + 1] * maskValue;
+                        sumRed += pixelData[index + 2] * maskValue;
+                    }
+                }
+            }
+
+            int index = (y * width + x) * 3;
+            pixelData[index] = static_cast<unsigned char>(clamp(sumBlue, 0.0f, 255.0f));
+            pixelData[index + 1] = static_cast<unsigned char>(clamp(sumGreen, 0.0f, 255.0f));
+            pixelData[index + 2] = static_cast<unsigned char>(clamp(sumRed, 0.0f, 255.0f));
+        }
+    }
+    return 0;
 }

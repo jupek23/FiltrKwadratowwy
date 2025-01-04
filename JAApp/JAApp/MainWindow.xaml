@@ -5,74 +5,72 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:JAApp"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="600" Width="800">
     <Grid>
-
+        <!-- Definicje wierszy i kolumn -->
         <Grid.RowDefinitions>
-
-            <RowDefinition Height="50*"/>
-            <RowDefinition Height="50*"/>
-
+            <RowDefinition Height="Auto"/>
+            <!-- Górny pasek na przyciski -->
+            <RowDefinition Height="*"/>
+            <!-- Główna przestrzeń na obrazy -->
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-
-
-            <ColumnDefinition Width="1.5*"/>
-            <ColumnDefinition Width="1.5*"/>
-            <ColumnDefinition Width="2*"/>
-
+            <ColumnDefinition Width="*"/>
+            <!-- Lewy obraz -->
+            <ColumnDefinition Width="*"/>
+            <!-- Prawy obraz -->
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Row="0"  
-                   Grid.Column="1"
-                   VerticalAlignment="Center" 
-                   HorizontalAlignment="Left">
-        </TextBlock>
-        <TextBlock Grid.Row="1"  
-                   Grid.Column="0"
-                   VerticalAlignment="Top" 
-                   HorizontalAlignment="Left" Margin="70,38,0,0">
-                   
-            Wybierz technologie
 
-        </TextBlock>
-        <Button Grid.Row="1"
-                Grid.Column="0"
-                Content="ASM"
-                Width="100"
-                Height="50"
-                VerticalAlignment="Top"
-                HorizontalAlignment="Left"
-                Click="asmButton" Margin="0,59,0,0"
-                />
+        <!-- Górny pasek na przyciski -->
+        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+            <Button Content="ASM"
+                    Width="100" Height="50"
+                    Margin="10"
+                    Click="asmButton"/>
+            <Button Content="C"
+                    Width="100" Height="50"
+                    Margin="10"
+                    Click="cButton"/>
+            <Button Content="Wybierz plik"
+                    Width="150" Height="50"
+                    Margin="10"
+                    Click="ChooseFileButton_Click"/>
 
-        <Button Grid.Row="1"
-                Grid.Column="0"
-                Content="C"
-                Width="100"
-                Height="50"
-                VerticalAlignment="Top"
-                HorizontalAlignment="Right"
-                Click="cButton" Margin="0,59,0,0"
-                />
+            <!-- Wybór liczby wątków -->
+            <StackPanel Orientation="Horizontal" Margin="20,0,0,0">
+                <Label Content="Wątki:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ComboBox Name="ThreadsComboBox"
+                          Width="100"
+                          SelectedIndex="0">
+                    <ComboBoxItem Content="1" />
+                    <ComboBoxItem Content="2" />
+                    <ComboBoxItem Content="4" />
+                    <ComboBoxItem Content="8" />
+                    <ComboBoxItem Content="16" />
+                    <ComboBoxItem Content="32" />
+                </ComboBox>
+            </StackPanel>
+        </StackPanel>
 
-        <Button Grid.Row="1" 
-                Content="Wybierz plik" 
-                Width="100" 
-                Height="50" 
-                VerticalAlignment="Top" 
-                HorizontalAlignment="Center" 
-                Click="ChooseFileButton_Click" 
-                Margin="0,133,0,0"
-                />
+        <!-- Lewy obraz -->
+        <Border Grid.Row="1" Grid.Column="0"
+                BorderBrush="Black" BorderThickness="1"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Margin="10">
+            <Image Name="DisplayImage1"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
 
-        <Image Name ="DisplayImage"
-               HorizontalAlignment="Center" 
-               VerticalAlignment="Center" 
-               Width="400" Height="400" 
-               Stretch="Uniform" 
-               />
-
-
+        <!-- Prawy obraz -->
+        <Border Grid.Row="1" Grid.Column="1"
+                BorderBrush="Black" BorderThickness="1"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Margin="10">
+            <Image Name="DisplayImage2"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
     </Grid>
 </Window>
