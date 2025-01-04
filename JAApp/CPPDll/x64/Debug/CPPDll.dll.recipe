@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>C:\Users\matis\FiltrKwadratowwy\JAApp\x64\Debug\CPPDll.dll</FullPath>
+      <FullPath>C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\bin\Debug\net8.0-windows\CPPDll.dll</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

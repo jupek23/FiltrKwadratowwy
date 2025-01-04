@@ -12,10 +12,10 @@ namespace JAApp
     public partial class MainWindow : Window
     {
         // Importowanie funkcji DLL z użyciem IntPtr
-        [DllImport("/../../../../x64Debug/JADll.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("JADll.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern int ApplyASMFilter(IntPtr pixelData, int width, int startY, int endY, int imageHeight);
 
-        [DllImport("/../../../../x64/Debug/CPPDll.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("CPPDll.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern int ApplyCFilter(IntPtr pixelData, int width, int startY, int endY, int imageHeight);
 
         private string selectedFilePath;
