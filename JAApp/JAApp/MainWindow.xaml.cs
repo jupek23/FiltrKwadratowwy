@@ -66,7 +66,7 @@ namespace JAApp
             imageHeight = bitmapImage.PixelHeight;
 
             // Calculate stride and allocate pixel buffer
-            int stride = imageWidth * 3; // RGB (3 bajty na piksel)
+            int stride = imageWidth * 3; // BGR (3 bajty na piksel)
             imagePixels = new byte[imageHeight * stride];
 
             // Extract pixel data
@@ -96,7 +96,7 @@ namespace JAApp
                 MessageBox.Show($"Błąd podczas konwersji obrazu: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
+     
         private void cButton(object sender, RoutedEventArgs e)
         {
             if (imagePixels == null)
