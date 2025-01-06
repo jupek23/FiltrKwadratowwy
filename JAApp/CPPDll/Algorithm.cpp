@@ -1,6 +1,6 @@
 #include "pch.h"
-#include <vector>
-#include <algorithm>
+#include <intrin.h>
+#include <iostream>
 
 // Funkcja clamp - ogranicza wartoœæ do zadanego zakresu (minValue, maxValue) wbudowana funckaj w bibliotece algorithm nie dzialala 
 inline float clamp(float value, float minValue, float maxValue) {
@@ -9,13 +9,15 @@ inline float clamp(float value, float minValue, float maxValue) {
     return value;
 }
 
-extern "C" __declspec(dllexport) int ApplyCFilter(unsigned char* pixelData, int width, int startY, int endY, int imageHeight) {
+extern "C" __declspec(dllexport) unsigned long long ApplyCFilter(unsigned char* pixelData, int width, int startY, int endY, int imageHeight) {
 	//wielkosc maski
     const int maskSize = 5;
 	//wyznacznie po³owy maski w celu ustaleniu zakresu s¹siedztwa
     const int halfMask = maskSize / 2;
 	//wartoœæ maski
     const float maskValue = 1.0f / 25.0f;
+
+    unsigned long long startTicks = __rdtsc();
 
 	//iterowanie po wierszach i kolumnach obrazu
     for (int y = startY; y < endY; ++y) {
@@ -47,5 +49,9 @@ extern "C" __declspec(dllexport) int ApplyCFilter(unsigned char* pixelData, int 
             pixelData[index + 2] = static_cast<unsigned char>(clamp(sumRed, 0.0f, 255.0f));
         }
     }
+
+    unsigned long long endTicks = __rdtsc();
+
     return 0;
+  
 }

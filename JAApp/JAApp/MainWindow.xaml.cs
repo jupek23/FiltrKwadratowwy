@@ -16,7 +16,7 @@ namespace JAApp
         public static extern int ApplyASMFilter(IntPtr pixelData, int width, int startY, int endY, int imageHeight);
 
         [DllImport("CPPDll.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern int ApplyCFilter(IntPtr pixelData, int width, int startY, int endY, int imageHeight);
+        public static extern ulong ApplyCFilter(IntPtr pixelData, int width, int startY, int endY, int imageHeight);
 
         private string selectedFilePath;
         private byte[] imagePixels;
@@ -96,7 +96,7 @@ namespace JAApp
                 MessageBox.Show($"Błąd podczas konwersji obrazu: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-     
+
         private void cButton(object sender, RoutedEventArgs e)
         {
             if (imagePixels == null)
@@ -107,31 +107,46 @@ namespace JAApp
 
             try
             {
-                int numberOfThreads = selectedThreads;
-                int rowsPerThread = imageHeight / numberOfThreads;
+                // Start pomiaru czasu
+                Stopwatch stopwatch = Stopwatch.StartNew();
 
+                // Podziel obraz na części i przetwarzaj równolegle
+                int numberOfThreads = selectedThreads; // Liczba wątków
+                int rowsPerThread = imageHeight / numberOfThreads;
                 Parallel.For(0, numberOfThreads, threadIndex =>
                 {
                     int startY = threadIndex * rowsPerThread;
                     int endY = (threadIndex == numberOfThreads - 1) ? imageHeight : startY + rowsPerThread;
 
+                    // Przygotuj dane do wysłania do DLL
                     IntPtr unmanagedPointer = Marshal.AllocHGlobal(imagePixels.Length);
                     Marshal.Copy(imagePixels, 0, unmanagedPointer, imagePixels.Length);
 
+                    // Wywołanie funkcji w DLL
                     ApplyCFilter(unmanagedPointer, imageWidth, startY, endY, imageHeight);
 
+                    // Skopiowanie danych z powrotem do tablicy zarządzanej
                     Marshal.Copy(unmanagedPointer, imagePixels, 0, imagePixels.Length);
+
+                    // Zwolnienie pamięci
                     Marshal.FreeHGlobal(unmanagedPointer);
                 });
 
+                // Koniec pomiaru czasu
+                stopwatch.Stop();
+
+                // Wyświetlenie przetworzonego obrazu
                 ConvertToImage();
-                MessageBox.Show("Filtr C zastosowany!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Wyświetlenie czasu wykonania
+                MessageBox.Show($"Filtr C został zastosowany w {stopwatch.ElapsedMilliseconds} ms", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Błąd podczas wywołania filtru C: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         private void asmButton(object sender, RoutedEventArgs e)
         {
@@ -143,6 +158,9 @@ namespace JAApp
 
             try
             {
+                // Start pomiaru czasu
+                Stopwatch stopwatch = Stopwatch.StartNew();
+
                 int numberOfThreads = selectedThreads;
                 int rowsPerThread = imageHeight / numberOfThreads;
 
@@ -158,10 +176,12 @@ namespace JAApp
 
                     Marshal.Copy(unmanagedPointer, imagePixels, 0, imagePixels.Length);
                     Marshal.FreeHGlobal(unmanagedPointer);
-                });
+                });                
+                // Koniec pomiaru czasu
+                stopwatch.Stop();
 
                 ConvertToImage();
-                MessageBox.Show("Filtr ASM zastosowany!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Filtr ASM został zastosowany w {stopwatch.ElapsedMilliseconds} ms", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {

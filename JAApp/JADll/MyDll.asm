@@ -1,9 +1,18 @@
 .DATA
     align 16
 const_0_04  dd 0.04, 0.04, 0.04, 0.04  ; wektor [0.04, 0.04, 0.04, 0.04]
+result QWORD ?;
 
 .CODE
 PUBLIC ApplyASMFilter
+
+; Zapisz liczbê taktów przed rozpoczêciem algorytmu
+    RDTSC
+    shl rdx, 32 ; Przenieœ wy¿sz¹ czêœæ do RDX
+    or rax, rdx ; Po³¹cz w pe³ne 64-bitowe RAX
+    mov qword ptr [result], rax
+
+
 ApplyASMFilter PROC
     ; Zapisz rejestry nieulotne
     push rbp
@@ -156,6 +165,12 @@ sum_pixels_row PROC
 
     ret
 sum_pixels_row ENDP
+; Zapisz liczbê taktów po zakoñczeniu algorytmu
+    RDTSC
+    shl rdx, 32
+    or rax, rdx
+    sub rax, qword ptr [result] ; Oblicz ró¿nicê (czas trwania)
+    mov qword ptr [result], rax
 
 ApplyASMFilter ENDP
 END
