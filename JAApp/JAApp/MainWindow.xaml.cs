@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using System.Windows.Shapes;
 
 namespace JAApp
 {
@@ -16,17 +19,35 @@ namespace JAApp
         public static extern int ApplyASMFilter(IntPtr pixelData, int width, int startY, int endY, int imageHeight);
 
         [DllImport("CPPDll.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern ulong ApplyCFilter(IntPtr pixelData, int width, int startY, int endY, int imageHeight);
+        public static extern int ApplyCFilter(IntPtr pixelData, int width, int startY, int endY, int imageHeight);
 
         private string selectedFilePath;
         private byte[] imagePixels;
         private int imageWidth;
         private int imageHeight;
-        private int selectedThreads = 1;
+        private int selectedThreads;
 
         public MainWindow()
         {
             InitializeComponent();
+            InitializeThreadSelection();
+        }
+
+        private void InitializeThreadSelection()
+        {
+            int realThreads = Environment.ProcessorCount;
+            selectedThreads = realThreads;
+
+            ThreadsComboBox.ItemsSource = Enumerable.Range(1, 64).ToList();
+            ThreadsComboBox.SelectedItem = realThreads;
+            ThreadsComboBox.SelectionChanged += (s, e) =>
+            {
+                if (ThreadsComboBox.SelectedItem is int selected)
+                {
+                    selectedThreads = selected;
+                    Debug.WriteLine($"Selected Threads: {selectedThreads}");
+                }
+            };
         }
 
         private void ChooseFileButton_Click(object sender, RoutedEventArgs e)
@@ -45,6 +66,7 @@ namespace JAApp
                 {
                     LoadToGui(selectedFilePath);
                     ConvertToBitMap(selectedFilePath);
+                    DrawHistogram(HistogramCanvas1, CalculateHistogram(imagePixels));
                 }
                 catch (Exception ex)
                 {
@@ -89,6 +111,7 @@ namespace JAApp
                 WriteableBitmap bitmap = new WriteableBitmap(imageWidth, imageHeight, 96, 96, PixelFormats.Rgb24, null);
                 bitmap.WritePixels(new Int32Rect(0, 0, imageWidth, imageHeight), imagePixels, imageWidth * 3, 0);
                 DisplayImage2.Source = bitmap;
+                DrawHistogram(HistogramCanvas2, CalculateHistogram(imagePixels));
                 Debug.WriteLine("Processed image displayed successfully.");
             }
             catch (Exception ex)
@@ -97,7 +120,7 @@ namespace JAApp
             }
         }
 
-        private void cButton(object sender, RoutedEventArgs e)
+        private void ApplyFilterWithThreads(Func<IntPtr, int, int, int, int, int> filterFunction)
         {
             if (imagePixels == null)
             {
@@ -107,85 +130,109 @@ namespace JAApp
 
             try
             {
-                // Start pomiaru czasu
                 Stopwatch stopwatch = Stopwatch.StartNew();
 
-                // Podziel obraz na części i przetwarzaj równolegle
-                int numberOfThreads = selectedThreads; // Liczba wątków
-                int rowsPerThread = imageHeight / numberOfThreads;
-                Parallel.For(0, numberOfThreads, threadIndex =>
-                {
-                    int startY = threadIndex * rowsPerThread;
-                    int endY = (threadIndex == numberOfThreads - 1) ? imageHeight : startY + rowsPerThread;
+                int rowsPerThread = imageHeight / selectedThreads;
 
-                    // Przygotuj dane do wysłania do DLL
+                Parallel.For(0, selectedThreads, threadIndex =>
+                {
+                    // Obliczanie zakresów z uwzględnieniem buforów
+                    int startY = threadIndex * rowsPerThread;
+                    int endY = (threadIndex == selectedThreads - 1) ? imageHeight : (threadIndex + 1) * rowsPerThread;
+
+                    // Dodaj bufor tylko jeśli zakres nie przekracza obrazu
+                    int processStartY = Math.Max(0, startY - 2);
+                    int processEndY = Math.Min(imageHeight, endY + 2);
+
                     IntPtr unmanagedPointer = Marshal.AllocHGlobal(imagePixels.Length);
                     Marshal.Copy(imagePixels, 0, unmanagedPointer, imagePixels.Length);
 
-                    // Wywołanie funkcji w DLL
-                    ApplyCFilter(unmanagedPointer, imageWidth, startY, endY, imageHeight);
+                    // Przetwarzanie wybranego zakresu
+                    filterFunction(unmanagedPointer, imageWidth, processStartY, processEndY, imageHeight);
 
-                    // Skopiowanie danych z powrotem do tablicy zarządzanej
-                    Marshal.Copy(unmanagedPointer, imagePixels, 0, imagePixels.Length);
+                    // Skopiowanie tylko właściwego zakresu (bez buforów)
+                    int validBytes = (endY - startY) * imageWidth * 3;
+                    Marshal.Copy(unmanagedPointer + (startY * imageWidth * 3), imagePixels, startY * imageWidth * 3, validBytes);
 
-                    // Zwolnienie pamięci
                     Marshal.FreeHGlobal(unmanagedPointer);
                 });
 
-                // Koniec pomiaru czasu
                 stopwatch.Stop();
-
-                // Wyświetlenie przetworzonego obrazu
                 ConvertToImage();
-
-                // Wyświetlenie czasu wykonania
-                MessageBox.Show($"Filtr C został zastosowany w {stopwatch.ElapsedMilliseconds} ms", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Filtr został zastosowany w {stopwatch.ElapsedMilliseconds} ms", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Błąd podczas wywołania filtru C: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Błąd podczas wywołania filtru: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
 
+        private void cButton(object sender, RoutedEventArgs e)
+        {
+            ApplyFilterWithThreads(ApplyCFilter);
+        }
+
         private void asmButton(object sender, RoutedEventArgs e)
         {
-            if (imagePixels == null)
+            ApplyFilterWithThreads(ApplyASMFilter);
+        }
+
+        private int[][] CalculateHistogram(byte[] pixels)
+        {
+            int[][] histogram = new int[3][];
+            histogram[0] = new int[256]; // Blue
+            histogram[1] = new int[256]; // Green
+            histogram[2] = new int[256]; // Red
+
+            for (int i = 0; i < pixels.Length; i += 3)
             {
-                MessageBox.Show("Najpierw wybierz i załaduj obraz!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                histogram[0][pixels[i]]++;       // Blue
+                histogram[1][pixels[i + 1]]++;  // Green
+                histogram[2][pixels[i + 2]]++;  // Red
             }
 
-            try
+            return histogram;
+        }
+
+        private void DrawHistogram(Canvas canvas, int[][] histogram)
+        {
+            canvas.Children.Clear();
+
+            int maxCount = Math.Max(histogram[0].Max(), Math.Max(histogram[1].Max(), histogram[2].Max()));
+            double scale = canvas.Height / maxCount;
+
+            for (int i = 0; i < 256; i++)
             {
-                // Start pomiaru czasu
-                Stopwatch stopwatch = Stopwatch.StartNew();
-
-                int numberOfThreads = selectedThreads;
-                int rowsPerThread = imageHeight / numberOfThreads;
-
-                Parallel.For(0, numberOfThreads, threadIndex =>
+                Rectangle blueRect = new Rectangle
                 {
-                    int startY = threadIndex * rowsPerThread;
-                    int endY = (threadIndex == numberOfThreads - 1) ? imageHeight : startY + rowsPerThread;
+                    Width = 1,
+                    Height = histogram[0][i] * scale,
+                    Fill = Brushes.Blue
+                };
+                Canvas.SetLeft(blueRect, i * 2);
+                Canvas.SetBottom(blueRect, 0);
+                canvas.Children.Add(blueRect);
 
-                    IntPtr unmanagedPointer = Marshal.AllocHGlobal(imagePixels.Length);
-                    Marshal.Copy(imagePixels, 0, unmanagedPointer, imagePixels.Length);
+                Rectangle greenRect = new Rectangle
+                {
+                    Width = 1,
+                    Height = histogram[1][i] * scale,
+                    Fill = Brushes.Green
+                };
+                Canvas.SetLeft(greenRect, i * 2);
+                Canvas.SetBottom(greenRect, 0);
+                canvas.Children.Add(greenRect);
 
-                    ApplyASMFilter(unmanagedPointer, imageWidth, startY, endY, imageHeight);
-
-                    Marshal.Copy(unmanagedPointer, imagePixels, 0, imagePixels.Length);
-                    Marshal.FreeHGlobal(unmanagedPointer);
-                });                
-                // Koniec pomiaru czasu
-                stopwatch.Stop();
-
-                ConvertToImage();
-                MessageBox.Show($"Filtr ASM został zastosowany w {stopwatch.ElapsedMilliseconds} ms", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Błąd podczas wywołania filtru ASM: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+                Rectangle redRect = new Rectangle
+                {
+                    Width = 1,
+                    Height = histogram[2][i] * scale,
+                    Fill = Brushes.Red
+                };
+                Canvas.SetLeft(redRect, i * 2);
+                Canvas.SetBottom(redRect, 0);
+                canvas.Children.Add(redRect);
             }
         }
     }

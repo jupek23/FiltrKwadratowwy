@@ -67,7 +67,6 @@ C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\bin\Debug\net8.0-windows\JAApp.pdb
 C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\MainWindow.g.cs
 C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\App.g.cs
 C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\JAApp_MarkupCompile.cache
-C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\JAApp_MarkupCompile.lref
 C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\MainWindow.baml
 C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\JAApp.g.resources
 C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\JAApp.GeneratedMSBuildEditorConfig.editorconfig
@@ -80,3 +79,4 @@ C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\refint\JAAp
 C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\JAApp.pdb
 C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\JAApp.genruntimeconfig.cache
 C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\ref\JAApp.dll
+C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\obj\Debug\net8.0-windows\JAApp_MarkupCompile.lref

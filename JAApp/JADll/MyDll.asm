@@ -1,176 +1,152 @@
 .DATA
     align 16
-const_0_04  dd 0.04, 0.04, 0.04, 0.04  ; wektor [0.04, 0.04, 0.04, 0.04]
-result QWORD ?;
+; wektor [0.04, 0.04, 0.04, 0.04] (1/(5)^2 )
+const_0_04  dd 0.04, 0.04, 0.04, 0.04  
 
 .CODE
 PUBLIC ApplyASMFilter
-
-; Zapisz liczbê taktów przed rozpoczêciem algorytmu
-    RDTSC
-    shl rdx, 32 ; Przenieœ wy¿sz¹ czêœæ do RDX
-    or rax, rdx ; Po³¹cz w pe³ne 64-bitowe RAX
-    mov qword ptr [result], rax
-
-
 ApplyASMFilter PROC
-    ; Zapisz rejestry nieulotne
-    push rbp
-    push rbx
-    push rsi
-    push rdi
-    push r12
-    push r13
-    push r14
-    push r15
+    ;--------------------
+    ; rejestry nieulotne  
+    ;--------------------
+    push    rbp
+    push    rbx
+    push    rsi
+    push    rdi
+    push    r12
+    push    r13
+    push    r14
+    push    r15
 
-    ; Pobierz parametry
-    mov r10d, [rsp + 104]    ; r10d = imageHeight
-    mov r12d, r8d            ; r12d = startY
-    mov r13d, edx            ; r13d = width
-    mov rbp, rcx             ; rbp = pixelData (wskaŸnik do danych pikseli)
-    mov r9d, r9d             ; r9d = endY
+    ;--------------------
+    ; Pobranie parametrów
+    ;--------------------
+    mov     r10d, [rsp + 104]   ; r10d = imageHeight 
+    mov     r12d, r8d           ; r12d = startY
+    mov     r13d, edx           ; r13d = width
+    mov     rbp, rcx            ; rbp = pixelData
+    mov     r9d, r9d            ; r9d = endY
 
+    ;-------------------
     ; Pêtla po wierszach
+    ;-------------------
 row_loop:
-    cmp r12d, r9d
-    jge end_function         ; Je¿eli y >= endY, zakoñcz
+    cmp     r12d, r9d
+    jge     end_function        ; Je¿eli y >= endY, koniec
 
-    ; Inicjalizacja x
-    xor r14d, r14d           ; r14d = x
+    xor     r14d, r14d         ; x = 0 na start
 
 col_loop:
-    cmp r14d, r13d
-    jge next_row             ; Je¿eli x >= width, przejdŸ do nastêpnego wiersza
+    cmp     r14d, r13d
+    jge     next_row           ; Je¿eli x >= width, przechodzimy do nastêpnego wiersza
 
-    ; Inicjalizacja sumów pikseli
-    pxor xmm0, xmm0          ; xmm0 = [0,0,0,0] - bêdzie sumowaæ [B,G,R,A?]
+    ; Wyzeruj akumulator sumy w xmm0
+    pxor    xmm0, xmm0         ; = [0, 0, 0, 0]
 
-    ; Rêczne sumowanie pikseli w s¹siedztwie 5x5
-    mov ecx, r12d
-    sub ecx, 2               ; y-2
-    call process_row
-    add ecx, 1               ; y-1
-    call process_row
-    add ecx, 1               ; y
-    call process_row
-    add ecx, 1               ; y+1
-    call process_row
-    add ecx, 1               ; y+2
-    call process_row
+    ;---------------------------------------
+    ; Pêtla 5x5: dodawanie do xmm0 pikseli z otoczenia
+    ;---------------------------------------
+    mov     r15d, -2           ; r15d = offset w pionie od aktualnego wiersza
 
-    ; Podziel sumy przez 25 (mno¿¹c przez 0.04)
-    mulps xmm0, xmmword ptr [const_0_04]
+outer_5x5_loop:
+    ; SprawdŸ, czy wiersz jest w granicach
+    mov     edx, r12d
+    add     edx, r15d
+    cmp     edx, 0
+    jl      skip_row
+    cmp     edx, r10d
+    jge     skip_row
 
-    ; Konwertuj z powrotem do liczb ca³kowitych
-    cvttps2dq xmm1, xmm0      ; w xmm1 mamy [B_int, G_int, R_int, A_int?]
+    ; Inicjalizacja offsetu w poziomie
+    mov     r8d, -2
 
-    ; Ogranicz do zakresu 0-255
-    packusdw xmm1, xmm1       ; Sk³adanie do 16-bitowych liczb
-    packuswb xmm1, xmm1       ; Sk³adanie do 8-bitowych liczb
+inner_5x5_loop:
+    ; SprawdŸ, czy kolumna jest w granicach
+    mov     eax, r14d
+    add     eax, r8d
+    cmp     eax, 0
+    jl      skip_col
+    cmp     eax, r13d
+    jge     skip_col
 
-    ; Przekszta³æ do formatu 00RRGGBB
-    movd ebx, xmm1            ; Zapisz dolne 32 bity (00RRGGBB) do rejestru ebx
+    ; Oblicz adres danego piksela
+    ; rowIndex = (y + r15d) * width
+    ; colIndex = (x + r8d)
+    ; offset   = (rowIndex + colIndex)*3
+    mov     ecx, edx           ; ecx = (y + offsetY)
+    imul    ecx, r13d
+    add     ecx, eax           ; ecx = (y + offsetY)*width + (x + offsetX)
+    imul    ecx, 3             ; bajty/piksel (B,G,R)
 
-    ; Oblicz offset docelowy w pamiêci
-    mov eax, r12d
-    imul eax, r13d
-    add eax, r14d
-    imul eax, 3
+    ; Wczytujemy piksel (32 bity) do xmm4
+    movd    xmm4, dword ptr [rbp + rcx]
 
-    ; Zapisz 4 bajty (B, G, R, X) do pamiêci
-    mov dword ptr [rbp + rax], ebx
+    ; Rozszerzamy 8-bit ? 16-bit ? 32-bit
+    pxor    xmm5, xmm5
+    punpcklbw xmm4, xmm5       ; 8-bit -> 16-bit
+    punpcklwd xmm4, xmm5       ; 16-bit -> 32-bit
 
-    inc r14d
-    jmp col_loop
+    ; Konwertujemy do float i dodajemy do sumy
+    cvtdq2ps xmm4, xmm4
+    addps   xmm0, xmm4
 
-next_row:
-    inc r12d
-    jmp row_loop
-
-end_function:
-    ; Przywróæ rejestry
-    pop r15
-    pop r14
-    pop r13
-    pop r12
-    pop rdi
-    pop rsi
-    pop rbx
-    pop rbp
-    ret
-
-; ------------------------------------------------------
-; process_row: Dodaje do xmm0 piksele z wiersza ecx
-;              w kolumnach [x-2..x+2], jeœli mieszcz¹ siê w obrazie
-; ------------------------------------------------------
-process_row PROC
-    cmp ecx, 0
-    jl skip_row
-    cmp ecx, r10d
-    jge skip_row
-
-    mov esi, ecx
-    imul esi, r13d
-    add esi, r14d
-    imul esi, 3
-
-    mov r15d, -2
-sum_x_offsets:
-    mov eax, r14d
-    add eax, r15d
-    cmp eax, 0
-    jl skip_x_offset
-    cmp eax, r13d
-    jge skip_x_offset
-
-    mov edx, ecx
-    imul edx, r13d
-    add edx, eax
-    imul edx, 3
-    mov esi, edx
-    call sum_pixels_row
-
-skip_x_offset:
-    add r15d, 1
-    cmp r15d, 2
-    jle sum_x_offsets
+skip_col:
+    add     r8d, 1
+    cmp     r8d, 2
+    jle     inner_5x5_loop
 
 skip_row:
+    add     r15d, 1
+    cmp     r15d, 2
+    jle     outer_5x5_loop
+
+    ;---------------------------------------
+    ; Obliczenie œredniej (podzielenie przez 25)
+    ; mno¿¹c przez 0.04
+    ;---------------------------------------
+    mulps   xmm0, xmmword ptr [const_0_04]
+
+    ;---------------------------------------
+    ; Konwersja float ? int oraz saturacja
+    ;---------------------------------------
+    cvttps2dq xmm1, xmm0       ; do liczby ca³kowitej
+    packusdw  xmm1, xmm1       ; zbicie do 16 bitów
+    packuswb  xmm1, xmm1       ; zbicie do 8 bitów
+
+    ; W xmm1 mamy (w dolnych 32 bitach) 00RRGGBB
+    movd    ebx, xmm1
+
+    ;---------------------------------------
+    ; Wyliczamy docelowy offset (y*width + x)*3
+    ;---------------------------------------
+    mov     eax, r12d
+    imul    eax, r13d
+    add     eax, r14d
+    imul    eax, 3
+
+    ; Zapisujemy 4 bajty (B, G, R, X) w pamiêci
+    mov     dword ptr [rbp + rax], ebx
+
+    ; Nastêpna kolumna
+    inc     r14d
+    jmp     col_loop
+
+next_row:
+    inc     r12d
+    jmp     row_loop
+
+end_function:
+    ;-------------------
+    ; rejestry nieulotne
+    ;-------------------
+    pop     r15
+    pop     r14
+    pop     r13
+    pop     r12
+    pop     rdi
+    pop     rsi
+    pop     rbx
+    pop     rbp
     ret
-process_row ENDP
-
-; ------------------------------------------------------
-; sum_pixels_row: Wczytuje piksel (B,G,R + 1 bajt "nadmiarowy")
-;                 i dodaje go do xmm0 w formacie float: [B, G, R, A?]
-; ------------------------------------------------------
-sum_pixels_row PROC
-    ; Wczytujemy 4 bajty (B, G, R, X) do rejestru XMM4.
-    movd xmm4, dword ptr [rbp + rsi]     ; wczytaj 32 bity
-
-    ; Przygotowujemy XMM5 = 0, by „roszerzaæ” bajty do word/dword.
-    pxor xmm5, xmm5
-
-    ; Rozszerz z 8-bitów do 16-bitów.
-    punpcklbw xmm4, xmm5                 ; po tym xmm4 = [B, G, R, A?] w 16-bitach
-
-    ; Rozszerz z 16-bitów do 32-bitów.
-    punpcklwd xmm4, xmm5                 ; po tym xmm4 = [B, G, R, A?] w 32-bitach
-
-    ; Konwersja z 32-bitów do float.
-    cvtdq2ps xmm4, xmm4                  ; xmm4 = [B_float, G_float, R_float, A_float?]
-
-    ; Dodaj do sumy w xmm0
-    addps xmm0, xmm4
-
-    ret
-sum_pixels_row ENDP
-; Zapisz liczbê taktów po zakoñczeniu algorytmu
-    RDTSC
-    shl rdx, 32
-    or rax, rdx
-    sub rax, qword ptr [result] ; Oblicz ró¿nicê (czas trwania)
-    mov qword ptr [result], rax
-
 ApplyASMFilter ENDP
 END
