@@ -1,0 +1,10 @@
+﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(517,5): warning MSB8004: Katalog Output nie kończy się ukośnikiem. To wystąpienie kompilacji doda ukośnik, ponieważ jest on niezbędny, aby możliwa była poprawna ocena katalogu Output.
+  pch.cpp
+  Algorithm.cpp
+  dllmain.cpp
+     Trwa tworzenie biblioteki C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\bin\Release\net8.0-windows\CPPDll.lib i obiektu C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\bin\Release\net8.0-windows\CPPDll.exp
+  Trwa generowanie kodu
+  Previous IPDB not found, fall back to full compilation.
+  All 3 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Zakończono generowanie kodu
+  CPPDll.vcxproj -> C:\Users\matis\FiltrKwadratowwy\JAApp\JAApp\bin\Release\net8.0-windows\CPPDll.dll

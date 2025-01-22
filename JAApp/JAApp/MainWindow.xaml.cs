@@ -195,6 +195,68 @@ namespace JAApp
             return histogram;
         }
 
+        private void SaveFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (imagePixels == null || string.IsNullOrEmpty(selectedFilePath))
+            {
+                MessageBox.Show("Najpierw przetwórz obraz przed zapisem!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Title = "Zapisz obraz",
+                Filter = "Pliki graficzne (*.bmp)|*.bmp",
+                FileName = System.IO.Path.GetFileNameWithoutExtension(selectedFilePath) + "_processed.bmp"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                string savePath = saveFileDialog.FileName;
+
+                // Check if output file name matches the input file name
+                if (string.Equals(savePath, selectedFilePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show("Nazwa pliku wyjściowego nie może być taka sama jak nazwa pliku wejściowego!",
+                        "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                try
+                {
+                    // Save the processed image
+                    SaveImage(savePath);
+                    MessageBox.Show($"Obraz zapisany pomyślnie: {savePath}", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Błąd podczas zapisywania obrazu: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+
+        private void SaveImage(string filePath)
+        {
+            if (imagePixels == null)
+            {
+                throw new InvalidOperationException("Brak danych pikseli do zapisania.");
+            }
+
+            // Create a WriteableBitmap from the processed pixels
+            WriteableBitmap bitmap = new WriteableBitmap(imageWidth, imageHeight, 96, 96, PixelFormats.Rgb24, null);
+            bitmap.WritePixels(new Int32Rect(0, 0, imageWidth, imageHeight), imagePixels, imageWidth * 3, 0);
+
+            // Save the bitmap as a BMP file
+            using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+            {
+                BitmapEncoder encoder = new BmpBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                encoder.Save(fileStream);
+            }
+        }
+
+
         private void DrawHistogram(Canvas canvas, int[][] histogram)
         {
             canvas.Children.Clear();
