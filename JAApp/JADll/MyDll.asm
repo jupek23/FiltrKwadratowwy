@@ -1,14 +1,38 @@
 .DATA
     align 16
-; wektor [0.04, 0.04, 0.04, 0.04] (1/(5)^2 )
+; -------------------------------------------
+; Sta³a `const_0_04`:
+; - Opis: Wektor o wartoœciach [0.04, 0.04, 0.04, 0.04].
+;   Wartoœci te odpowiadaj¹ 1/25, co jest wspó³czynnikiem dla filtru 5x5.
+; - U¿ycie: Umo¿liwia obliczanie œredniej wartoœci pikseli w oknie 5x5
+;   przez mno¿enie akumulatora sumy przez tê sta³¹.
+; - Rozmiar: 16 bajtów (4 wartoœci float, ka¿da 4 bajty).
+; -------------------------------------------
 const_0_04  dd 0.04, 0.04, 0.04, 0.04  
 
 .CODE
 PUBLIC ApplyASMFilter
+; -------------------------------------------
+; Funkcja `ApplyASMFilter`:
+; - Opis: Przetwarza obraz w pamiêci, stosuj¹c filtr 5x5 (œrednia wartoœci).
+;   Obraz wejœciowy i wyjœciowy znajduj¹ siê w tej samej pamiêci.
+; - Parametry wejœciowe:
+;   * rcx: wskaŸnik na dane pikseli (pixelData) - tablica bajtów RGB.
+;   * rdx: szerokoœæ obrazu (width) - liczba pikseli w wierszu (>0).
+;   * r8: pocz¹tkowy wiersz do przetwarzania (startY, >=0).
+;   * r9: koñcowy wiersz do przetwarzania (endY, <= wysokoœæ obrazu).
+;   * [rsp+104]: wysokoœæ obrazu (imageHeight) - liczba wierszy (>0).
+; - Parametry wyjœciowe:
+;   * Przetworzony obraz zapisany w pamiêci (pixelData).
+; - Rejestry modyfikowane:
+;   * Zmienne: xmm0, xmm1, xmm4, xmm5, rax, rbx, rcx, rdx, r8, r9, r10, r12, r13, r14, r15.
+;   * Rejestry nieulotne: rbp, rbx, rsi, rdi, r12, r13, r14, r15 (przywracane przed zakoñczeniem).
+; -------------------------------------------
 ApplyASMFilter PROC
-    ;--------------------
-    ; rejestry nieulotne  
-    ;--------------------
+    ; -------------------------------------------
+    ; Zabezpieczenie rejestrów nieulotnych przed zmian¹.
+    ; Rejestry: rbp, rbx, rsi, rdi, r12, r13, r14, r15.
+    ; -------------------------------------------
     push    rbp
     push    rbx
     push    rsi
@@ -18,75 +42,87 @@ ApplyASMFilter PROC
     push    r14
     push    r15
 
-    ;--------------------
-    ; Pobranie parametrów
-    ;--------------------
-    mov     r10d, [rsp + 104]   ; r10d = imageHeight 
-    mov     r12d, r8d           ; r12d = startY
-    mov     r13d, edx           ; r13d = width
-    mov     rbp, rcx            ; rbp = pixelData
-    mov     r9d, r9d            ; r9d = endY
+    ; -------------------------------------------
+    ; Pobranie parametrów wejœciowych:
+    ; - r10d: wysokoœæ obrazu (imageHeight).
+    ; - r12d: pocz¹tkowy wiersz (startY).
+    ; - r13d: szerokoœæ obrazu (width).
+    ; - rbp: wskaŸnik na dane pikseli (pixelData).
+    ; - r9d: koñcowy wiersz (endY).
+    ; -------------------------------------------
+    mov     r10d, [rsp + 104]   ; Wczytanie wysokoœci obrazu do r10d.
+    mov     r12d, r8d           ; Ustawienie startY w r12d.
+    mov     r13d, edx           ; Szerokoœæ obrazu (width) do r13d.
+    mov     rbp, rcx            ; WskaŸnik na dane pikseli (pixelData) do rbp.
+    mov     r9d, r9d            ; Koñcowy wiersz (endY) do r9d.
 
-    ;-------------------
-    ; Pêtla po wierszach
-    ;-------------------
+    ; -------------------------------------------
+    ; Pêtla wierszy (row_loop):
+    ; - Iteruje od startY (r12d) do endY (r9d).
+    ; - Przetwarza kolejne wiersze obrazu.
+    ; -------------------------------------------
 row_loop:
     cmp     r12d, r9d
-    jge     end_function        ; Je¿eli y >= endY, koniec
+    jge     end_function        ; Jeœli r12d >= r9d, zakoñcz przetwarzanie.
 
-    xor     r14d, r14d         ; x = 0 na start
+    xor     r14d, r14d          ; Ustawienie kolumny x = 0 (r14d).
 
+    ; -------------------------------------------
+    ; Pêtla kolumn (col_loop):
+    ; - Iteruje od x = 0 do x = width.
+    ; - Przetwarza kolejne piksele w bie¿¹cym wierszu.
+    ; -------------------------------------------
 col_loop:
     cmp     r14d, r13d
-    jge     next_row           ; Je¿eli x >= width, przechodzimy do nastêpnego wiersza
+    jge     next_row           ; Jeœli x >= width, przejdŸ do kolejnego wiersza.
 
-    ; Wyzeruj akumulator sumy w xmm0
-    pxor    xmm0, xmm0         ; = [0, 0, 0, 0]
+    ; Wyzerowanie akumulatora sumy w rejestrze xmm0.
+    pxor    xmm0, xmm0         ; xmm0 = [0, 0, 0, 0].
 
-    ;---------------------------------------
-    ; Pêtla 5x5: dodawanie do xmm0 pikseli z otoczenia
-    ;---------------------------------------
-    mov     r15d, -2           ; r15d = offset w pionie od aktualnego wiersza
+    ; -------------------------------------------
+    ; Pêtla przetwarzania okna 5x5 (outer_5x5_loop):
+    ; - Iteruje po wierszach od -2 do +2 wokó³ bie¿¹cego piksela.
+    ; -------------------------------------------
+    mov     r15d, -2           ; Ustawienie offsetu pionowego (-2).
 
 outer_5x5_loop:
-    ; SprawdŸ, czy wiersz jest w granicach
+    ; Sprawdzenie, czy bie¿¹cy wiersz mieœci siê w granicach obrazu.
     mov     edx, r12d
-    add     edx, r15d
+    add     edx, r15d          ; edx = bie¿¹cy wiersz + offset.
     cmp     edx, 0
-    jl      skip_row
+    jl      skip_row           ; Jeœli wiersz < 0, pomiñ.
     cmp     edx, r10d
-    jge     skip_row
+    jge     skip_row           ; Jeœli wiersz >= wysokoœæ obrazu, pomiñ.
 
-    ; Inicjalizacja offsetu w poziomie
+    ; Inicjalizacja offsetu poziomego (-2).
     mov     r8d, -2
 
 inner_5x5_loop:
-    ; SprawdŸ, czy kolumna jest w granicach
+    ; Sprawdzenie, czy bie¿¹ca kolumna mieœci siê w granicach obrazu.
     mov     eax, r14d
-    add     eax, r8d
+    add     eax, r8d           ; eax = bie¿¹ca kolumna + offset.
     cmp     eax, 0
-    jl      skip_col
+    jl      skip_col           ; Jeœli kolumna < 0, pomiñ.
     cmp     eax, r13d
-    jge     skip_col
+    jge     skip_col           ; Jeœli kolumna >= szerokoœæ obrazu, pomiñ.
 
-    ; Oblicz adres danego piksela
-    ; rowIndex = (y + r15d) * width
-    ; colIndex = (x + r8d)
-    ; offset   = (rowIndex + colIndex)*3
-    mov     ecx, edx           ; ecx = (y + offsetY)
-    imul    ecx, r13d
-    add     ecx, eax           ; ecx = (y + offsetY)*width + (x + offsetX)
-    imul    ecx, 3             ; bajty/piksel (B,G,R)
+    ; Obliczanie adresu bie¿¹cego piksela:
+    ; - rowIndex = (y + offsetY) * width.
+    ; - colIndex = x + offsetX.
+    mov     ecx, edx           ; ecx = y + offsetY.
+    imul    ecx, r13d          ; ecx = (y + offsetY) * width.
+    add     ecx, eax           ; ecx = (y + offsetY) * width + (x + offsetX).
+    imul    ecx, 3             ; Skalowanie adresu (3 bajty na piksel).
 
-    ; Wczytujemy piksel (32 bity) do xmm4
+    ; Wczytanie bie¿¹cego piksela (B, G, R) do xmm4.
     movd    xmm4, dword ptr [rbp + rcx]
 
-    ; Rozszerzamy 8-bit ? 16-bit ? 32-bit
-    pxor    xmm5, xmm5
-    punpcklbw xmm4, xmm5       ; 8-bit -> 16-bit
-    punpcklwd xmm4, xmm5       ; 16-bit -> 32-bit
+    ; Rozszerzenie wartoœci pikseli (8-bit -> 32-bit).
+    pxor    xmm5, xmm5         ; Zerowanie xmm5.
+    punpcklbw xmm4, xmm5       ; Rozszerzenie do 16-bit.
+    punpcklwd xmm4, xmm5       ; Rozszerzenie do 32-bit.
 
-    ; Konwertujemy do float i dodajemy do sumy
+    ; Konwersja wartoœci do float i dodanie do akumulatora sumy.
     cvtdq2ps xmm4, xmm4
     addps   xmm0, xmm4
 
@@ -100,45 +136,40 @@ skip_row:
     cmp     r15d, 2
     jle     outer_5x5_loop
 
-    ;---------------------------------------
-    ; Obliczenie œredniej (podzielenie przez 25)
-    ; mno¿¹c przez 0.04
-    ;---------------------------------------
+    ; -------------------------------------------
+    ; Obliczanie œredniej pikseli w oknie 5x5.
+    ; -------------------------------------------
     mulps   xmm0, xmmword ptr [const_0_04]
 
-    ;---------------------------------------
-    ; Konwersja float ? int oraz saturacja
-    ;---------------------------------------
-    cvttps2dq xmm1, xmm0       ; do liczby ca³kowitej
-    packusdw  xmm1, xmm1       ; zbicie do 16 bitów
-    packuswb  xmm1, xmm1       ; zbicie do 8 bitów
+    ; -------------------------------------------
+    ; Konwersja wartoœci float -> int.
+    ; Saturacja wartoœci do zakresu [0, 255].
+    ; -------------------------------------------
+    cvttps2dq xmm1, xmm0       ; Konwersja do liczb ca³kowitych.
+    packusdw  xmm1, xmm1       ; Pakowanie do 16-bit.
+    packuswb  xmm1, xmm1       ; Pakowanie do 8-bit.
 
-    ; W xmm1 mamy (w dolnych 32 bitach) 00RRGGBB
-    movd    ebx, xmm1
-
-    ;---------------------------------------
-    ; Wyliczamy docelowy offset (y*width + x)*3
-    ;---------------------------------------
-    mov     eax, r12d
-    imul    eax, r13d
-    add     eax, r14d
-    imul    eax, 3
-
-    ; Zapisujemy 4 bajty (B, G, R, X) w pamiêci
+    ; Zapisanie przetworzonego piksela.
+    movd    ebx, xmm1          ; Wynik w ebx (00RRGGBB).
+    mov     eax, r12d          ; eax = y (startY).
+    imul    eax, r13d          ; eax = y * width.
+    add     eax, r14d          ; eax = y * width + x.
+    imul    eax, 3             ; Skalowanie adresu (3 bajty na piksel).
     mov     dword ptr [rbp + rax], ebx
 
-    ; Nastêpna kolumna
+    ; Nastêpna kolumna.
     inc     r14d
     jmp     col_loop
 
 next_row:
+    ; Nastêpny wiersz.
     inc     r12d
     jmp     row_loop
 
 end_function:
-    ;-------------------
-    ; rejestry nieulotne
-    ;-------------------
+    ; -------------------------------------------
+    ; Przywracanie rejestrów nieulotnych.
+    ; -------------------------------------------
     pop     r15
     pop     r14
     pop     r13

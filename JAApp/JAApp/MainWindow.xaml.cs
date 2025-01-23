@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Temat projektu: Przetwarzanie obrazów w aplikacji WPF z wykorzystaniem algorytmów w C++ i ASM
+// Opis algorytmu: Interfejs aplikacji, który pozwala na wybór obrazu, zastosowanie filtra 5x5 oraz zapisanie wynikowego obrazu.
+// Data wykonania projektu: Semestr Zimowy 2024/2025
+// Autor: Mateusz Skrzypiec
+
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -122,7 +127,7 @@ namespace JAApp
 
         private void ApplyFilterWithThreads(Func<IntPtr, int, int, int, int, int> filterFunction)
         {
-            if (imagePixels == null)
+            if (string.IsNullOrEmpty(selectedFilePath))
             {
                 MessageBox.Show("Najpierw wybierz i załaduj obraz!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -130,10 +135,11 @@ namespace JAApp
 
             try
             {
-                Stopwatch stopwatch = Stopwatch.StartNew();
+                // Zawsze ładuj dane obrazu z `selectedFilePath`
+                ConvertToBitMap(selectedFilePath);
 
                 int rowsPerThread = imageHeight / selectedThreads;
-
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 Parallel.For(0, selectedThreads, threadIndex =>
                 {
                     // Obliczanie zakresów z uwzględnieniem buforów
@@ -166,6 +172,7 @@ namespace JAApp
                 MessageBox.Show($"Błąd podczas wywołania filtru: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
 
         private void cButton(object sender, RoutedEventArgs e)
@@ -206,26 +213,34 @@ namespace JAApp
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
                 Title = "Zapisz obraz",
-                Filter = "Pliki graficzne (*.bmp)|*.bmp",
-                FileName = System.IO.Path.GetFileNameWithoutExtension(selectedFilePath) + "_processed.bmp"
+                Filter = "Pliki BMP (*.bmp)|*.bmp|Pliki JPEG (*.jpg)|*.jpg|Pliki PNG (*.png)|*.png",
+                FileName = System.IO.Path.GetFileNameWithoutExtension(selectedFilePath) + "_processed"
             };
 
             if (saveFileDialog.ShowDialog() == true)
             {
                 string savePath = saveFileDialog.FileName;
 
-                // Check if output file name matches the input file name
+                // Sprawdzenie, czy użytkownik próbuje nadpisać plik źródłowy
                 if (string.Equals(savePath, selectedFilePath, StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show("Nazwa pliku wyjściowego nie może być taka sama jak nazwa pliku wejściowego!",
-                        "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Nie można nadpisać oryginalnego obrazu w użyciu!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                string extension = System.IO.Path.GetExtension(savePath).ToLower();
+
+                // Sprawdzenie, czy wybrano poprawny format
+                if (extension != ".bmp" && extension != ".jpg" && extension != ".jpeg" && extension != ".png")
+                {
+                    MessageBox.Show("Nieobsługiwany format pliku!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 try
                 {
-                    // Save the processed image
-                    SaveImage(savePath);
+                    // Zapis obrazu z odpowiednim formatem
+                    SaveImage(savePath, extension.TrimStart('.'));
                     MessageBox.Show($"Obraz zapisany pomyślnie: {savePath}", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
@@ -236,25 +251,45 @@ namespace JAApp
         }
 
 
-        private void SaveImage(string filePath)
+
+
+        private void SaveImage(string filePath, string format)
         {
             if (imagePixels == null)
             {
                 throw new InvalidOperationException("Brak danych pikseli do zapisania.");
             }
 
-            // Create a WriteableBitmap from the processed pixels
+            // Tworzenie WriteableBitmap z przetworzonych pikseli
             WriteableBitmap bitmap = new WriteableBitmap(imageWidth, imageHeight, 96, 96, PixelFormats.Rgb24, null);
             bitmap.WritePixels(new Int32Rect(0, 0, imageWidth, imageHeight), imagePixels, imageWidth * 3, 0);
 
-            // Save the bitmap as a BMP file
+            // Wybór odpowiedniego enkodera na podstawie formatu
+            BitmapEncoder encoder;
+            switch (format.ToLower())
+            {
+                case "bmp":
+                    encoder = new BmpBitmapEncoder();
+                    break;
+                case "jpg":
+                case "jpeg":
+                    encoder = new JpegBitmapEncoder();
+                    break;
+                case "png":
+                    encoder = new PngBitmapEncoder();
+                    break;
+                default:
+                    throw new ArgumentException("Nieobsługiwany format zapisu: " + format);
+            }
+
+            // Zapis obrazu do pliku
             using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
             {
-                BitmapEncoder encoder = new BmpBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(bitmap));
                 encoder.Save(fileStream);
             }
         }
+
 
 
         private void DrawHistogram(Canvas canvas, int[][] histogram)
