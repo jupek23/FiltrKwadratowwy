@@ -31,6 +31,8 @@ namespace JAApp
         private int imageWidth;
         private int imageHeight;
         private int selectedThreads;
+        private bool isAlgorithmApplied = false;
+
 
         public MainWindow()
         {
@@ -60,7 +62,7 @@ namespace JAApp
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
                 Title = "Wybierz obraz",
-                Filter = "Pliki graficzne (*.jpg;*.png;*.bmp)|*.jpg;*.png;*.bmp|Wszystkie pliki (*.*)|*.*"
+                Filter = "Pliki graficzne (*.jpg;*.png;*.bmp)|*.jpg;*.png;*.bmp"
             };
 
             if (openFileDialog.ShowDialog() == true)
@@ -138,33 +140,42 @@ namespace JAApp
                 // Zawsze ładuj dane obrazu z `selectedFilePath`
                 ConvertToBitMap(selectedFilePath);
 
-                int rowsPerThread = imageHeight / selectedThreads;
+                // Obliczanie optymalnego podziału w pionie
+                int baseSegmentHeight = imageHeight / selectedThreads;
+                int extraRows = imageHeight % selectedThreads;
+
+                int[] startYs = new int[selectedThreads];
+                int[] endYs = new int[selectedThreads];
+
+                // Obliczanie startY i endY dla każdego wątku
+                int currentStartY = 0;
+                for (int i = 0; i < selectedThreads; i++)
+                {
+                    int segmentHeight = baseSegmentHeight + (i < extraRows ? 1 : 0);
+                    startYs[i] = currentStartY;
+                    endYs[i] = currentStartY + segmentHeight;
+                    currentStartY += segmentHeight;
+                }
+
+                // Przypięcie tablicy imagePixels do pamięci, by uniknąć problemów z GC
+                GCHandle handle = GCHandle.Alloc(imagePixels, GCHandleType.Pinned);
+                IntPtr pixelDataPtr = Marshal.UnsafeAddrOfPinnedArrayElement(imagePixels, 0);
+
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 Parallel.For(0, selectedThreads, threadIndex =>
                 {
-                    // Obliczanie zakresów z uwzględnieniem buforów
-                    int startY = threadIndex * rowsPerThread;
-                    int endY = (threadIndex == selectedThreads - 1) ? imageHeight : (threadIndex + 1) * rowsPerThread;
-
-                    // Dodaj bufor tylko jeśli zakres nie przekracza obrazu
-                    int processStartY = Math.Max(0, startY - 2);
-                    int processEndY = Math.Min(imageHeight, endY + 2);
-
-                    IntPtr unmanagedPointer = Marshal.AllocHGlobal(imagePixels.Length);
-                    Marshal.Copy(imagePixels, 0, unmanagedPointer, imagePixels.Length);
+                    int startY = startYs[threadIndex];
+                    int endY = endYs[threadIndex];
 
                     // Przetwarzanie wybranego zakresu
-                    filterFunction(unmanagedPointer, imageWidth, processStartY, processEndY, imageHeight);
-
-                    // Skopiowanie tylko właściwego zakresu (bez buforów)
-                    int validBytes = (endY - startY) * imageWidth * 3;
-                    Marshal.Copy(unmanagedPointer + (startY * imageWidth * 3), imagePixels, startY * imageWidth * 3, validBytes);
-
-                    Marshal.FreeHGlobal(unmanagedPointer);
+                    filterFunction(pixelDataPtr, imageWidth, startY, endY, imageHeight);
                 });
 
                 stopwatch.Stop();
+                handle.Free();
+
                 ConvertToImage();
+                isAlgorithmApplied = true; // Ustaw flagę na true po poprawnym przetworzeniu
                 MessageBox.Show($"Filtr został zastosowany w {stopwatch.ElapsedMilliseconds} ms", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -204,6 +215,12 @@ namespace JAApp
 
         private void SaveFileButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!isAlgorithmApplied)
+            {
+                MessageBox.Show("Najpierw zastosuj algorytm przed zapisaniem obrazu!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             if (imagePixels == null || string.IsNullOrEmpty(selectedFilePath))
             {
                 MessageBox.Show("Najpierw przetwórz obraz przed zapisem!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -253,6 +270,7 @@ namespace JAApp
 
 
 
+
         private void SaveImage(string filePath, string format)
         {
             if (imagePixels == null)
@@ -296,41 +314,57 @@ namespace JAApp
         {
             canvas.Children.Clear();
 
-            int maxCount = Math.Max(histogram[0].Max(), Math.Max(histogram[1].Max(), histogram[2].Max()));
-            double scale = canvas.Height / maxCount;
+            double canvasWidth = canvas.ActualWidth;
+            double canvasHeight = canvas.ActualHeight;
 
+            if (canvasWidth == 0 || canvasHeight == 0)
+                return;
+
+            // Obliczanie maksymalnej wartości w histogramie
+            int maxCount = Math.Max(histogram[0].Max(), Math.Max(histogram[1].Max(), histogram[2].Max()));
+
+            // Obliczanie szerokości pojedynczego słupka
+            double barWidth = Math.Max(canvasWidth / (256 * 3), 1); // Podział na RGB (3 słupki per poziom jasności)
+            double scale = canvasHeight / maxCount;
+
+            // Tworzenie słupków histogramu
             for (int i = 0; i < 256; i++)
             {
+                // Blue bar
                 Rectangle blueRect = new Rectangle
                 {
-                    Width = 1,
+                    Width = barWidth,
                     Height = histogram[0][i] * scale,
                     Fill = Brushes.Blue
                 };
-                Canvas.SetLeft(blueRect, i * 2);
+                Canvas.SetLeft(blueRect, i * 3 * barWidth);
                 Canvas.SetBottom(blueRect, 0);
                 canvas.Children.Add(blueRect);
 
+                // Green bar
                 Rectangle greenRect = new Rectangle
                 {
-                    Width = 1,
+                    Width = barWidth,
                     Height = histogram[1][i] * scale,
                     Fill = Brushes.Green
                 };
-                Canvas.SetLeft(greenRect, i * 2);
+                Canvas.SetLeft(greenRect, i * 3 * barWidth + barWidth);
                 Canvas.SetBottom(greenRect, 0);
                 canvas.Children.Add(greenRect);
 
+                // Red bar
                 Rectangle redRect = new Rectangle
                 {
-                    Width = 1,
+                    Width = barWidth,
                     Height = histogram[2][i] * scale,
                     Fill = Brushes.Red
                 };
-                Canvas.SetLeft(redRect, i * 2);
+                Canvas.SetLeft(redRect, i * 3 * barWidth + 2 * barWidth);
                 Canvas.SetBottom(redRect, 0);
                 canvas.Children.Add(redRect);
             }
         }
+
+
     }
 }
